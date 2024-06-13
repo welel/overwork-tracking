@@ -202,6 +202,7 @@ func RecordWorkingHours() {
 		Overwork: workedDuration - data.NeedWork,
 	}
 	if len(data.History) > 0 && IsSameDate(data.History[len(data.History)-1].Date, time.Now()) {
+		data.Overwork -= data.History[len(data.History)-1].Overwork
 		data.History[len(data.History)-1] = historicalRecord
 	} else {
 		data.History = append(data.History, historicalRecord)
