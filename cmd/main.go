@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path"
 	"time"
@@ -43,9 +44,14 @@ func NewData() *Data {
 
 func (d WorkTimeDuration) String() string {
 	totalMinutes := int64(time.Duration(d).Minutes())
-	h := totalMinutes / 60
-	m := totalMinutes % 60
-	return fmt.Sprintf("%02d:%02d", h, m)
+	h := int(totalMinutes / 60)
+	sign := ""
+	if h < 0 {
+		sign = "-"
+	}
+	h = int(math.Abs(float64(h)))
+	m := int(math.Abs(float64(totalMinutes % 60)))
+	return fmt.Sprintf("%s%02d:%02d", sign, h, m)
 }
 
 // Creates JSON file with data for the program by DataFilePath.
@@ -114,7 +120,7 @@ func LoadData() (err error) {
 	}
 	err = json.Unmarshal(fileContent, &data)
 	if err != nil {
-		return err
+		return fmt.Errorf("Data content is invalid at '%v': %v", dataFilePath, err)
 	}
 	return nil
 }
@@ -176,11 +182,10 @@ func IsSameDate(t1, t2 time.Time) bool {
 	return y1 == y2 && m1 == m2 && d1 == d2
 }
 
-func ReturnToMainScreenOption(s string) {
+func BlockUntilEnterPressed(s string) {
 	fmt.Printf("\n%s\n", s)
 	fmt.Println("-> Press Enter to return to the main screen")
-	rd := bufio.NewReader(os.Stdin)
-	rd.ReadString('\n')
+	fmt.Scanln()
 }
 
 func ScanDurationFromStdin(s string, d *WorkTimeDuration) {
@@ -218,7 +223,7 @@ func RecordWorkingHours() {
 	}
 	data.Overwork += historicalRecord.Overwork
 	go SaveData()
-	ReturnToMainScreenOption("Worked hours are recorded.")
+	BlockUntilEnterPressed("Worked hours are recorded.")
 }
 
 func ChangeNeedWork() {
@@ -226,12 +231,25 @@ func ChangeNeedWork() {
 	ScanDurationFromStdin("Enter required work hours for today (format: '09:11'):", &needWorkedDuration)
 	data.NeedWork = needWorkedDuration
 	go SaveData()
-	ReturnToMainScreenOption("Today's need work time is changed.")
+	BlockUntilEnterPressed("Today's need work time is changed.")
 }
 
 func PrintHistory() {
-	panic("Not implemented")
-
+	fmt.Println("\n________________________________________")
+	fmt.Println("| Date  | Worked | Need work | Overwork |")
+	fmt.Println("|-------+--------+-----------+----------|")
+	for _, record := range data.History {
+		fmt.Printf(
+			"| %s | %s  | %s     | %6s   |\n",
+			record.Date.Format("02.01"),
+			record.Worked,
+			record.NeedWork,
+			record.Overwork,
+		)
+	}
+	fmt.Println("|_______|________|___________|__________|")
+	BlockUntilEnterPressed("")
+	BlockUntilEnterPressed("") // Why first call doesn't stop the program?
 }
 
 func main() {
