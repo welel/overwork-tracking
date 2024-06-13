@@ -174,22 +174,27 @@ func ReturnToMainScreenOption(s string) {
 	rd.ReadString('\n')
 }
 
-func RecordWorkingHours() {
+func ScanDurationFromStdin(s string, d *time.Duration) {
 	var h, m int
-	fmt.Printf("Enter hours worked today (format: '%v'):\n", WorkHourInputFormat)
+	fmt.Println(s)
 	sc := bufio.NewScanner(os.Stdin)
 	sc.Scan() // Skip empty line
 	for {
 		sc.Scan()
 		if _, err := fmt.Sscanf(sc.Text(), "%d:%d", &h, &m); err != nil {
-			fmt.Println("Wrong format! Input in this format: ", WorkHourInputFormat)
+			fmt.Println("Wrong format! Input in this format: HH:MM")
 		} else if h > 24 || h < 0 || m > 59 || m < 0 {
 			fmt.Println("Wrong format! HH must be from 00 to 24 and MM from 00 to 59.")
 		} else {
 			break
 		}
 	}
-	workedDuration := time.Duration(time.Hour*time.Duration(h) + time.Minute*time.Duration(m))
+	*d = time.Duration(time.Hour*time.Duration(h) + time.Minute*time.Duration(m))
+}
+
+func RecordWorkingHours() {
+	var workedDuration time.Duration
+	ScanDurationFromStdin("Enter hours worked today (format: '09:15'):", &workedDuration)
 	historicalRecord := HistoryRecord{
 		Date:     time.Now(),
 		Worked:   workedDuration,
@@ -201,12 +206,17 @@ func RecordWorkingHours() {
 	} else {
 		data.History = append(data.History, historicalRecord)
 	}
+	data.Overwork += historicalRecord.Overwork
 	go SaveData()
 	ReturnToMainScreenOption("Worked hours are recorded.")
 }
 
 func ChangeNeedWork() {
-	panic("Not implemented")
+	var needWorkedDuration time.Duration
+	ScanDurationFromStdin("Enter required work hours for today (format: '09:11'):", &needWorkedDuration)
+	data.NeedWork = needWorkedDuration
+	go SaveData()
+	ReturnToMainScreenOption("Today's need work time is changed.")
 }
 
 func PrintHistory() {
