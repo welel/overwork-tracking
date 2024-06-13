@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,7 +12,8 @@ import (
 )
 
 const (
-	DataFilePath string = "data.json"
+	DataFilePath        string = "data.json"
+	WorkHourInputFormat string = "HH:MM"
 )
 
 type HistoryRecord struct {
@@ -37,7 +39,8 @@ func NewData() *Data {
 	}
 }
 
-func CreateMemoryFile() (err error) {
+// Creates JSON file with data for the program by DataFilePath.
+func CreateDataFile() (err error) {
 	var file *os.File
 	dataFilePath := path.Join(".", DataFilePath)
 
@@ -87,18 +90,43 @@ func CreateMemoryFile() (err error) {
 	return nil
 }
 
-func StartupEnvironment() error {
-	err := CreateMemoryFile()
+// Loads data from JSON file.
+func LoadData() (err error) {
+	dataFilePath := path.Join(".", DataFilePath)
+
+	file, err := os.Open(dataFilePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	fileContent, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(fileContent, &data)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func SaveData() (err error) {
+// Creates required files and loads data in memory.
+func StartupEnvironment() (err error) {
+	err = CreateDataFile()
+	if err != nil {
+		return
+	}
+	err = LoadData()
+	if err != nil {
+		return
+	}
+	return nil
+}
+
+func SaveData() {
 	content, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	dataFilePath := path.Join(".", DataFilePath)
@@ -106,32 +134,84 @@ func SaveData() (err error) {
 
 	file, err := os.Create(tempDataFilePath)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	defer file.Close()
 
 	if _, err = file.Write(content); err != nil {
-		return err
+		panic(err)
 	}
 	file.Close()
 
 	if err = os.Remove(dataFilePath); err != nil {
-		return err
+		panic(err)
 	}
 
 	if err = os.Rename(tempDataFilePath, dataFilePath); err != nil {
-		return err
+		panic(err)
 	}
-	return nil
 }
 
 func ShowMainScreen() {
 	fmt.Printf("---\nWork Today: %s\nOverwork: %s\n\n", data.NeedWork, data.Overwork)
 	fmt.Println("1. Record Working Hours")
-	fmt.Println("2. Change Work Today")
-	fmt.Println("3. Print history")
+	fmt.Println("2. Change Need Work")
+	fmt.Println("3. Print History")
 	fmt.Println("---")
 	fmt.Print("Select an option: ")
+}
+
+func IsSameDate(t1, t2 time.Time) bool {
+	y1, m1, d1 := t1.Date()
+	y2, m2, d2 := t2.Date()
+	return y1 == y2 && m1 == m2 && d1 == d2
+}
+
+func ReturnToMainScreenOption(s string) {
+	fmt.Printf("\n%s\n", s)
+	fmt.Println("-> Press Enter to return to the main screen")
+	rd := bufio.NewReader(os.Stdin)
+	rd.ReadString('\n')
+}
+
+func RecordWorkingHours() {
+	var h, m int
+	fmt.Printf("Enter hours worked today (format: '%v'):\n", WorkHourInputFormat)
+	sc := bufio.NewScanner(os.Stdin)
+	sc.Scan() // Skip empty line
+	for {
+		sc.Scan()
+		if _, err := fmt.Sscanf(sc.Text(), "%d:%d", &h, &m); err != nil {
+			fmt.Println("Wrong format! Input in this format: ", WorkHourInputFormat)
+		} else if h > 24 || h < 0 || m > 59 || m < 0 {
+			fmt.Println("Wrong format! HH must be from 00 to 24 and MM from 00 to 59.")
+		} else {
+			break
+		}
+	}
+	workedDuration := time.Duration(time.Hour*time.Duration(h) + time.Minute*time.Duration(m))
+	historicalRecord := HistoryRecord{
+		Date:     time.Now(),
+		Worked:   workedDuration,
+		NeedWork: data.NeedWork,
+		Overwork: workedDuration - data.NeedWork,
+	}
+	if len(data.History) > 0 && IsSameDate(data.History[len(data.History)-1].Date, time.Now()) {
+		data.History[len(data.History)-1] = historicalRecord
+	} else {
+		data.History = append(data.History, historicalRecord)
+	}
+	go SaveData()
+	ReturnToMainScreenOption("Worked hours are recorded.")
+}
+
+func ChangeNeedWork() {
+	panic("Not implemented")
+}
+
+func PrintHistory() {
+	panic("Not implemented")
+
 }
 
 func main() {
@@ -140,7 +220,6 @@ func main() {
 		fmt.Printf("Can't startup a program: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Println("Started successfully...")
 
 	var option int
 	for {
@@ -150,25 +229,13 @@ func main() {
 		}
 		switch option {
 		case 1:
-			fmt.Println(1)
+			RecordWorkingHours()
 		case 2:
-			fmt.Println(2)
+			ChangeNeedWork()
 		case 3:
-			fmt.Println(3)
+			PrintHistory()
 		default:
 			fmt.Println("Invalid option, please try again.")
 		}
 	}
 }
-
-// data.History = append(data.History, HistoryRecord{
-// 	Date:     time.Now(),
-// 	Worked:   0,
-// 	NeedWork: 0,
-// 	Overwork: 0,
-// })
-// err = SaveData()
-// if err != nil {
-// 	fmt.Printf("Failed to save data: %v\n", err)
-// 	os.Exit(1)
-// }
