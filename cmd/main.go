@@ -16,17 +16,19 @@ const (
 	WorkHourInputFormat string = "HH:MM"
 )
 
+type WorkTimeDuration time.Duration
+
 type HistoryRecord struct {
-	Date     time.Time     `json:"date"`
-	Worked   time.Duration `json:"worked"`
-	NeedWork time.Duration `json:"need_work"`
-	Overwork time.Duration `json:"overwork"`
+	Date     time.Time        `json:"date"`
+	Worked   WorkTimeDuration `json:"worked"`
+	NeedWork WorkTimeDuration `json:"need_work"`
+	Overwork WorkTimeDuration `json:"overwork"`
 }
 
 type Data struct {
-	NeedWork time.Duration   `json:"need_work"`
-	Overwork time.Duration   `json:"overwork"`
-	History  []HistoryRecord `json:"history"`
+	NeedWork WorkTimeDuration `json:"need_work"`
+	Overwork WorkTimeDuration `json:"overwork"`
+	History  []HistoryRecord  `json:"history"`
 }
 
 var data Data
@@ -37,6 +39,13 @@ func NewData() *Data {
 		Overwork: 0,
 		History:  []HistoryRecord{},
 	}
+}
+
+func (d WorkTimeDuration) String() string {
+	totalMinutes := int64(time.Duration(d).Minutes())
+	h := totalMinutes / 60
+	m := totalMinutes % 60
+	return fmt.Sprintf("%02d:%02d", h, m)
 }
 
 // Creates JSON file with data for the program by DataFilePath.
@@ -153,7 +162,7 @@ func SaveData() {
 }
 
 func ShowMainScreen() {
-	fmt.Printf("---\nWork Today: %s\nOverwork: %s\n\n", data.NeedWork, data.Overwork)
+	fmt.Printf("---\nWork Today:\t%s\nOverwork:\t%s\n\n", data.NeedWork, data.Overwork)
 	fmt.Println("1. Record Working Hours")
 	fmt.Println("2. Change Need Work")
 	fmt.Println("3. Print History")
@@ -174,7 +183,7 @@ func ReturnToMainScreenOption(s string) {
 	rd.ReadString('\n')
 }
 
-func ScanDurationFromStdin(s string, d *time.Duration) {
+func ScanDurationFromStdin(s string, d *WorkTimeDuration) {
 	var h, m int
 	fmt.Println(s)
 	sc := bufio.NewScanner(os.Stdin)
@@ -189,11 +198,11 @@ func ScanDurationFromStdin(s string, d *time.Duration) {
 			break
 		}
 	}
-	*d = time.Duration(time.Hour*time.Duration(h) + time.Minute*time.Duration(m))
+	*d = WorkTimeDuration(time.Hour*time.Duration(h) + time.Minute*time.Duration(m))
 }
 
 func RecordWorkingHours() {
-	var workedDuration time.Duration
+	var workedDuration WorkTimeDuration
 	ScanDurationFromStdin("Enter hours worked today (format: '09:15'):", &workedDuration)
 	historicalRecord := HistoryRecord{
 		Date:     time.Now(),
@@ -213,7 +222,7 @@ func RecordWorkingHours() {
 }
 
 func ChangeNeedWork() {
-	var needWorkedDuration time.Duration
+	var needWorkedDuration WorkTimeDuration
 	ScanDurationFromStdin("Enter required work hours for today (format: '09:11'):", &needWorkedDuration)
 	data.NeedWork = needWorkedDuration
 	go SaveData()
