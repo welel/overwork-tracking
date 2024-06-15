@@ -9,11 +9,12 @@ import (
 
 // Displays the main menu of the app with some info and control options.
 func ShowMainScreen(data *Data) {
-	fmt.Printf("---\nWork Today:\t%s\nOverwork:\t%s\n\n", data.NeedWork, data.Overwork)
+	fmt.Println("-----------------------")
+	fmt.Printf("Work Today:\t%s\nOverwork:\t%s\n\n", data.NeedWork, data.Overwork)
 	fmt.Println("1. Record Working Hours")
 	fmt.Println("2. Change Need Work")
 	fmt.Println("3. Print History")
-	fmt.Println("---")
+	fmt.Println("-----------------------")
 	fmt.Print("Select an option: ")
 }
 
