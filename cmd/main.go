@@ -55,7 +55,7 @@ func (d WorkTimeDuration) String() string {
 	totalMinutes := int64(time.Duration(d).Minutes())
 	h := int(totalMinutes / 60)
 	sign := ""
-	if h < 0 {
+	if totalMinutes < 0 {
 		sign = "-"
 	}
 	h = int(math.Abs(float64(h)))
