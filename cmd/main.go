@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	DataFilePath        string = "data.json"
+	DataFilePath        string = ".overwork_data.json"
 	WorkHourInputFormat string = "HH:MM"
 )
 
@@ -188,7 +188,7 @@ func BlockUntilEnterPressed(s string) {
 	fmt.Scanln()
 }
 
-func ScanDurationFromStdin(s string, d *WorkTimeDuration) {
+func ScanDuration(s string, d *WorkTimeDuration) {
 	var h, m int
 	fmt.Println(s)
 	sc := bufio.NewScanner(os.Stdin)
@@ -208,7 +208,7 @@ func ScanDurationFromStdin(s string, d *WorkTimeDuration) {
 
 func RecordWorkingHours() {
 	var workedDuration WorkTimeDuration
-	ScanDurationFromStdin("Enter hours worked today (format: '09:15'):", &workedDuration)
+	ScanDuration("Enter hours worked today (format: '09:15'):", &workedDuration)
 	historicalRecord := HistoryRecord{
 		Date:     time.Now(),
 		Worked:   workedDuration,
@@ -228,7 +228,7 @@ func RecordWorkingHours() {
 
 func ChangeNeedWork() {
 	var needWorkedDuration WorkTimeDuration
-	ScanDurationFromStdin("Enter required work hours for today (format: '09:11'):", &needWorkedDuration)
+	ScanDuration("Enter required work hours for today (format: '09:11'):", &needWorkedDuration)
 	data.NeedWork = needWorkedDuration
 	go SaveData()
 	BlockUntilEnterPressed("Today's need work time is changed.")
