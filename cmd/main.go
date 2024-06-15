@@ -42,6 +42,15 @@ func NewData() *Data {
 	}
 }
 
+func NewHistoryRecord(workedDuration WorkTimeDuration) *HistoryRecord {
+	return &HistoryRecord{
+		Date:     time.Now(),
+		Worked:   workedDuration,
+		NeedWork: data.NeedWork,
+		Overwork: workedDuration - data.NeedWork,
+	}
+}
+
 func (d WorkTimeDuration) String() string {
 	totalMinutes := int64(time.Duration(d).Minutes())
 	h := int(totalMinutes / 60)
@@ -209,17 +218,15 @@ func ScanDuration(s string, d *WorkTimeDuration) {
 func RecordWorkingHours() {
 	var workedDuration WorkTimeDuration
 	ScanDuration("Enter hours worked today (format: '09:15'):", &workedDuration)
-	historicalRecord := HistoryRecord{
-		Date:     time.Now(),
-		Worked:   workedDuration,
-		NeedWork: data.NeedWork,
-		Overwork: workedDuration - data.NeedWork,
-	}
-	if len(data.History) > 0 && IsSameDate(data.History[len(data.History)-1].Date, time.Now()) {
-		data.Overwork -= data.History[len(data.History)-1].Overwork
-		data.History[len(data.History)-1] = historicalRecord
+
+	historicalRecord := NewHistoryRecord(workedDuration)
+	lastIdx := len(data.History) - 1
+
+	if len(data.History) > 0 && IsSameDate(data.History[lastIdx].Date, historicalRecord.Date) {
+		data.Overwork -= data.History[lastIdx].Overwork
+		data.History[lastIdx] = *historicalRecord
 	} else {
-		data.History = append(data.History, historicalRecord)
+		data.History = append(data.History, *historicalRecord)
 	}
 	data.Overwork += historicalRecord.Overwork
 	go SaveData()
