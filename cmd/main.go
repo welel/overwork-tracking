@@ -12,10 +12,7 @@ import (
 	"time"
 )
 
-const (
-	DataFilePath        string = ".overwork_data.json"
-	WorkHourInputFormat string = "HH:MM"
-)
+const DataFilePath string = ".overwork_data.json"
 
 type WorkTimeDuration time.Duration
 
@@ -35,11 +32,7 @@ type Data struct {
 var data Data
 
 func NewData() *Data {
-	return &Data{
-		NeedWork: 0,
-		Overwork: 0,
-		History:  []HistoryRecord{},
-	}
+	return &Data{NeedWork: 0, Overwork: 0, History: []HistoryRecord{}}
 }
 
 func NewHistoryRecord(workedDuration WorkTimeDuration) *HistoryRecord {
@@ -53,12 +46,11 @@ func NewHistoryRecord(workedDuration WorkTimeDuration) *HistoryRecord {
 
 func (d WorkTimeDuration) String() string {
 	totalMinutes := int64(time.Duration(d).Minutes())
-	h := int(totalMinutes / 60)
 	sign := ""
 	if totalMinutes < 0 {
 		sign = "-"
 	}
-	h = int(math.Abs(float64(h)))
+	h := int(math.Abs(float64(int(totalMinutes / 60))))
 	m := int(math.Abs(float64(totalMinutes % 60)))
 	return fmt.Sprintf("%s%02d:%02d", sign, h, m)
 }
@@ -70,12 +62,7 @@ func CreateDataFile() (err error) {
 
 	if _, err = os.Stat(dataFilePath); err == nil {
 		// File exists
-		file, err = os.Open(dataFilePath)
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-
+		return nil
 	} else if errors.Is(err, os.ErrNotExist) {
 		// File doesn't exist
 		file, err = os.Create(dataFilePath)
@@ -101,15 +88,6 @@ func CreateDataFile() (err error) {
 
 	} else {
 		return err
-	}
-
-	fileContent, err := io.ReadAll(file)
-	if err != nil {
-		return err
-	}
-
-	if !json.Valid(fileContent) {
-		return fmt.Errorf("Data content is invalid at '%v'", dataFilePath)
 	}
 	return nil
 }
@@ -229,7 +207,7 @@ func RecordWorkingHours() {
 		data.History = append(data.History, *historicalRecord)
 	}
 	data.Overwork += historicalRecord.Overwork
-	go SaveData()
+	SaveData()
 	BlockUntilEnterPressed("Worked hours are recorded.")
 }
 
@@ -237,15 +215,22 @@ func ChangeNeedWork() {
 	var needWorkedDuration WorkTimeDuration
 	ScanDuration("Enter required work hours for today (format: '09:11'):", &needWorkedDuration)
 	data.NeedWork = needWorkedDuration
-	go SaveData()
+	SaveData()
 	BlockUntilEnterPressed("Today's need work time is changed.")
 }
 
 func PrintHistory() {
+	var prevHist HistoryRecord
 	fmt.Println("\n________________________________________")
 	fmt.Println("| Date  | Worked | Need work | Overwork |")
 	fmt.Println("|-------+--------+-----------+----------|")
 	for _, record := range data.History {
+		if prevHist.Date.Year() != 1 {
+			daysBetween := int(record.Date.Sub(prevHist.Date).Hours()/24) - 1
+			for i := 0; i < daysBetween; i++ {
+				fmt.Println("|       |        |           |          |")
+			}
+		}
 		fmt.Printf(
 			"| %s | %s  | %s     | %6s   |\n",
 			record.Date.Format("02.01"),
@@ -253,6 +238,7 @@ func PrintHistory() {
 			record.NeedWork,
 			record.Overwork,
 		)
+		prevHist = record
 	}
 	fmt.Println("|_______|________|___________|__________|")
 	BlockUntilEnterPressed("")
