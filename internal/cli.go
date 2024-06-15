@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// Displays the main menu of the app with some info and control options.
 func ShowMainScreen(data *Data) {
 	fmt.Printf("---\nWork Today:\t%s\nOverwork:\t%s\n\n", data.NeedWork, data.Overwork)
 	fmt.Println("1. Record Working Hours")
@@ -16,12 +17,14 @@ func ShowMainScreen(data *Data) {
 	fmt.Print("Select an option: ")
 }
 
+// Displays a message and waits for the user to press Enter before continuing.
 func BlockUntilEnterPressed(s string) {
 	fmt.Printf("\n%s\n", s)
 	fmt.Println("-> Press Enter to return to the main screen")
 	fmt.Scanln()
 }
 
+// Displays a message and prompts the user to enter a duration in HH:MM format and scans it into d.
 func ScanDuration(s string, d *WorkTimeDuration) {
 	var h, m int
 	fmt.Println(s)
@@ -40,6 +43,7 @@ func ScanDuration(s string, d *WorkTimeDuration) {
 	*d = WorkTimeDuration(time.Hour*time.Duration(h) + time.Minute*time.Duration(m))
 }
 
+// Records the hours worked for the day, updates history, and saves data.
 func RecordWorkingHours(data *Data) {
 	var workedDuration WorkTimeDuration
 	ScanDuration("Enter hours worked today (format: '09:15'):", &workedDuration)
@@ -58,6 +62,7 @@ func RecordWorkingHours(data *Data) {
 	BlockUntilEnterPressed("Worked hours are recorded.")
 }
 
+// Allows the user to change the required work hours for the day and saves the updated data.
 func ChangeNeedWork(data *Data) {
 	var needWorkedDuration WorkTimeDuration
 	ScanDuration("Enter required work hours for today (format: '09:11'):", &needWorkedDuration)
@@ -66,6 +71,7 @@ func ChangeNeedWork(data *Data) {
 	BlockUntilEnterPressed("Today's need work time is changed.")
 }
 
+// Prints the work history in a table format.
 func PrintHistory(data *Data) {
 	var prevHist HistoryRecord
 	fmt.Println("\n________________________________________")
@@ -90,4 +96,25 @@ func PrintHistory(data *Data) {
 	fmt.Println("|_______|________|___________|__________|")
 	BlockUntilEnterPressed("")
 	BlockUntilEnterPressed("") // Why first call doesn't stop the program?
+}
+
+// Runs the main app loop, displaying the main screen and handling user inputs.
+func MainLoop(data *Data) {
+	var option int
+	for {
+		ShowMainScreen(data)
+		if _, err := fmt.Scan(&option); err != nil {
+			option = 0
+		}
+		switch option {
+		case 1:
+			RecordWorkingHours(data)
+		case 2:
+			ChangeNeedWork(data)
+		case 3:
+			PrintHistory(data)
+		default:
+			fmt.Println("Invalid option, please try again.")
+		}
+	}
 }

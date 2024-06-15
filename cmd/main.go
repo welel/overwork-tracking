@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/welel/overwork-tracking/internal"
 )
@@ -14,21 +16,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	var option int
-	for {
-		internal.ShowMainScreen(data)
-		if _, err = fmt.Scan(&option); err != nil {
-			option = 0
-		}
-		switch option {
-		case 1:
-			internal.RecordWorkingHours(data)
-		case 2:
-			internal.ChangeNeedWork(data)
-		case 3:
-			internal.PrintHistory(data)
-		default:
-			fmt.Println("Invalid option, please try again.")
-		}
-	}
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go internal.MainLoop(data)
+
+	<-sigChan
+	internal.Shutdown(data)
 }

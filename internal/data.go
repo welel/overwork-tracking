@@ -11,7 +11,7 @@ import (
 
 const DataFilePath string = ".overwork_data.json"
 
-// Creates JSON file with data for the program by DataFilePath.
+// Checks if the JSON data file exists; if not, creates it with default data.
 func CreateDataFile() (err error) {
 	var file *os.File
 	dataFilePath := path.Join(".", DataFilePath)
@@ -48,7 +48,8 @@ func CreateDataFile() (err error) {
 	return nil
 }
 
-// Loads data from JSON file.
+// Reads JSON data from the file and unmarshals it into a Data structure.
+// Returns the loaded Data structure.
 func LoadData() (data *Data, err error) {
 	dataFilePath := path.Join(".", DataFilePath)
 
@@ -68,7 +69,8 @@ func LoadData() (data *Data, err error) {
 	return data, nil
 }
 
-// Creates required files and loads data in memory.
+// Initializes the app environment by ensuring the data file exists and loading its content.
+// Returns the loaded Data structure and an error if file creation, reading, or unmarshaling fails.
 func StartupEnvironment() (data *Data, err error) {
 	err = CreateDataFile()
 	if err != nil {
@@ -81,6 +83,8 @@ func StartupEnvironment() (data *Data, err error) {
 	return data, nil
 }
 
+// Serializes the provided Data structure to JSON format and writes it to the data file.
+// Panics if serialization or file operations fail unexpectedly.
 func SaveData(data *Data) {
 	content, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
@@ -108,4 +112,9 @@ func SaveData(data *Data) {
 	if err = os.Rename(tempDataFilePath, dataFilePath); err != nil {
 		panic(err)
 	}
+}
+
+// Performs shutdown operations.
+func Shutdown(data *Data) {
+	SaveData(data)
 }

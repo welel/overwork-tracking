@@ -6,25 +6,34 @@ import (
 	"time"
 )
 
+// WorkTimeDuration represents a duration of time for work-related activities.
 type WorkTimeDuration time.Duration
 
+// HistoryRecord represents a record of work history for a specific date.
 type HistoryRecord struct {
-	Date     time.Time        `json:"date"`
-	Worked   WorkTimeDuration `json:"worked"`
-	NeedWork WorkTimeDuration `json:"need_work"`
-	Overwork WorkTimeDuration `json:"overwork"`
+	Date     time.Time        `json:"date"`      // Date of the work record.
+	Worked   WorkTimeDuration `json:"worked"`    // Time duration worked on that date.
+	NeedWork WorkTimeDuration `json:"need_work"` // Required work duration for that date.
+	Overwork WorkTimeDuration `json:"overwork"`  // Amount of overwork (worked - required).
 }
 
+// Data represents the overall data structure containing work tracking information.
 type Data struct {
-	NeedWork WorkTimeDuration `json:"need_work"`
-	Overwork WorkTimeDuration `json:"overwork"`
-	History  []HistoryRecord  `json:"history"`
+	NeedWork WorkTimeDuration `json:"need_work"` // Current required work duration for today.
+	Overwork WorkTimeDuration `json:"overwork"`  // Total overwork accumulated (positive is overwork, negative is opposite).
+	History  []HistoryRecord  `json:"history"`   // List of historical work records.
 }
 
+// Creates a new Data structure with default values.
 func NewData() *Data {
-	return &Data{NeedWork: 0, Overwork: 0, History: []HistoryRecord{}}
+	return &Data{
+		NeedWork: 0,
+		Overwork: 0,
+		History:  []HistoryRecord{},
+	}
 }
 
+// Creates a new HistoryRecord with the given required work duration (needWork) and worked duration.
 func NewHistoryRecord(needWork, workedDuration WorkTimeDuration) *HistoryRecord {
 	return &HistoryRecord{
 		Date:     time.Now(),
@@ -34,6 +43,7 @@ func NewHistoryRecord(needWork, workedDuration WorkTimeDuration) *HistoryRecord 
 	}
 }
 
+// Returns a string representation of WorkTimeDuration in "-HH:MM" format.
 func (d WorkTimeDuration) String() string {
 	totalMinutes := int64(time.Duration(d).Minutes())
 	sign := ""
